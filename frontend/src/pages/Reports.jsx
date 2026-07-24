@@ -46,6 +46,12 @@ export default function Reports() {
     finally { setLoading(false) }
   }
 
+  const download = async (id) => {
+    try {
+      await endpoints.downloadReport(id)
+    } catch (e) { setError(e.message); toast.error(e.message) }
+  }
+
   return (
     <div>
       <div className="card">
@@ -82,9 +88,9 @@ export default function Reports() {
         {lastReport && (
           <div className="alert alert-success">
             Report #{lastReport.report_id} generated · {' '}
-            <a href={endpoints.downloadReportUrl(lastReport.report_id)} target="_blank" rel="noreferrer">
+            <button className="secondary" style={{ padding: '0.3rem 0.6rem', marginLeft: 4 }} onClick={() => download(lastReport.report_id)}>
               <Download size={12} style={{ verticalAlign: 'middle' }} /> Download {lastReport.format.toUpperCase()}
-            </a>
+            </button>
           </div>
         )}
       </div>
@@ -113,9 +119,9 @@ export default function Reports() {
                   <td className="mono">{new Date(r.created_at).toLocaleString('en-IN')}</td>
                   <td className="mono muted">{(r.file_path && (r.file_path.length)) || '—'}</td>
                   <td>
-                    <a href={endpoints.downloadReportUrl(r.id)} target="_blank" rel="noreferrer" title="Download">
-                      <button className="secondary" style={{ padding: '0.4rem 0.6rem' }}><Download size={14} /></button>
-                    </a>
+                    <button className="secondary" style={{ padding: '0.4rem 0.6rem' }} onClick={() => download(r.id)} title="Download">
+                      <Download size={14} />
+                    </button>
                   </td>
                 </tr>
               ))}

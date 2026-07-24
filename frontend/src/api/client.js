@@ -83,7 +83,24 @@ export const endpoints = {
   // Reports
   generateReport: (data) => api.post('/reports/generate', data).then(r => r.data),
   listReports: () => api.get('/reports/list').then(r => r.data),
-  downloadReportUrl: (id) => `${API_BASE}/reports/download/${id}`,
+  // Authenticated download: a plain <a href> can't send the JWT header, so the
+  // secured /reports/download endpoint returns 401. Fetch the file as a blob
+  // (token attached by the request interceptor) and save it client-side.
+  downloadReport: async (id) => {
+    const res = await api.get(`/reports/download/${id}`, { responseType: 'blob' })
+    const cd = res.headers['content-disposition'] || ''
+    const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cd)
+    const filename = match ? decodeURIComponent(match[1]) : `report_${id}`
+    const url = URL.createObjectURL(res.data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+    return filename
+  },
 
   // Dashboard
   dashboardSummary: () => api.get('/dashboard/summary').then(r => r.data),
