@@ -18,7 +18,7 @@ from typing import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.exceptions import RequestValidationError
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -82,11 +82,30 @@ SECURITY_HEADERS = {
     ),
 }
 
+# Swagger UI / ReDoc load their JS+CSS from the jsDelivr CDN and use an inline
+# init script, so the strict app CSP renders /docs and /redoc blank. Relax the
+# CSP *only* on these two documentation routes; every API/data response keeps
+# the strict policy above.
+DOCS_CSP = (
+    "default-src 'self'; "
+    "img-src 'self' data: https:; "
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+    "font-src 'self' data: https://fonts.gstatic.com; "
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+    "worker-src 'self' blob:; "
+    "connect-src 'self'; "
+    "frame-ancestors 'none'; "
+    "base-uri 'self';"
+)
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         resp: Response = await call_next(request)
+        is_docs = request.url.path in ("/docs", "/redoc")
         for k, v in SECURITY_HEADERS.items():
+            if k == "Content-Security-Policy" and is_docs:
+                v = DOCS_CSP
             resp.headers.setdefault(k, v)
         return resp
 
@@ -115,8 +134,8 @@ app = FastAPI(
     version=settings.APP_VERSION,
     description="AI/ML retail demand forecasting & inventory optimisation API",
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=None,
+    redoc_url=None,
     openapi_url="/openapi.json",
 )
 
@@ -180,6 +199,86 @@ def root():
 @app.get("/health", tags=["meta"])
 def health():
     return {"status": "ok"}
+
+
+# ----- custom docs routes (force light mode to avoid browser dark-mode blank) -----
+SWAGGER_CSS = """
+html, body { background: #fafafa !important; color: #3b4151 !important; color-scheme: light !important; }
+.swagger-ui, .swagger-ui * { color-scheme: light; }
+.swagger-ui .info .title, .swagger-ui .info .title small { color: #3b4151; }
+.swagger-ui .opblock-tag, .swagger-ui .opblock-tag a { color: #3b4151 !important; }
+.swagger-ui .opblock .opblock-summary-description { color: #3b4151; }
+.swagger-ui .opblock .opblock-summary-operation-id,
+.swagger-ui .opblock .opblock-summary-path { color: #3b4151; }
+.swagger-ui .parameter__name, .swagger-ui .parameter__type { color: #3b4151; }
+.swagger-ui .response-col_status, .swagger-ui .response-col_description { color: #3b4151; }
+.swagger-ui table thead tr th, .swagger-ui table thead tr td { color: #3b4151; }
+.swagger-ui .model-title, .swagger-ui .model { color: #3b4151; }
+.swagger-ui .btn { color: #3b4151; }
+.swagger-ui .btn.authorize { color: #49cc90; border-color: #49cc90; }
+.swagger-ui input[type=text], .swagger-ui input[type=password],
+.swagger-ui textarea, .swagger-ui select {
+  color: #3b4151 !important; background: #fff !important; border: 1px solid #d9d9d9 !important;
+}
+.swagger-ui .markdown p, .swagger-ui .markdown li, .swagger-ui .renderedMarkdown p { color: #3b4151; }
+.swagger-ui .scheme-container { background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.1); }
+.swagger-ui section.models .model-container { background: #fff; }
+.swagger-ui .dialog-ux .modal-ux { background: #fff; color: #3b4151; }
+"""
+
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_docs():
+    return HTMLResponse(f"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="color-scheme" content="light" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css" />
+<link rel="shortcut icon" href="https://fastapi.tiangolo.com/img/favicon.png" />
+<title>{settings.APP_NAME} - Swagger UI</title>
+<style>{SWAGGER_CSS}</style>
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+<script>
+SwaggerUIBundle({{
+  url: '/openapi.json',
+  dom_id: '#swagger-ui',
+  layout: 'BaseLayout',
+  deepLinking: true,
+  showExtensions: true,
+  showCommonExtensions: true,
+  oauth2RedirectUrl: window.location.origin + '/docs/oauth2-redirect',
+  presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+}})
+</script>
+</body>
+</html>""")
+
+
+@app.get("/redoc", include_in_schema=False)
+async def custom_redoc():
+    return HTMLResponse(f"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="color-scheme" content="light" />
+<title>{settings.APP_NAME} - ReDoc</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet" />
+<style>
+html, body {{ background: #fafafa !important; color: #333 !important; color-scheme: light !important; }}
+</style>
+</head>
+<body>
+<redoc spec-url='/openapi.json'></redoc>
+<script src="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"></script>
+</body>
+</html>""")
 
 
 # ----- routers -----

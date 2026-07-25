@@ -1,10 +1,17 @@
 # Retail Demand Forecasting System
 
+![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-2.16-FF6F00?logo=tensorflow&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Version](https://img.shields.io/badge/Version-1.1.0-purple)
+
 > An AI/ML-powered demand forecasting and inventory optimization platform for the **Retail & Supply Chain** domain.
 >
 > **Author:** Karan Dhaodiyal · **Program:** MCA · **Version:** 1.1.0
 
-Combines **Prophet**, **XGBoost**, and **LSTM** time-series models with a secure **FastAPI** backend and a **React + Glassmorphism** dashboard to deliver product demand prediction, inventory recommendations, seasonal analysis, sales forecasting, role-based authentication, and report generation.
+Combines **Prophet**, **XGBoost**, and **LSTM** time-series models with a secure **FastAPI** backend and a **React** dashboard (with **Light/Dark theme toggle**) to deliver product demand prediction, inventory recommendations, seasonal analysis, sales forecasting, role-based authentication, and report generation.
 
 ---
 
@@ -20,7 +27,8 @@ Combines **Prophet**, **XGBoost**, and **LSTM** time-series models with a secure
 | **Report Generation** | Export forecasts, inventory status, and seasonal analyses as JSON or CSV. |
 | **🔐 Secure Authentication** | JWT access + refresh tokens, bcrypt password hashing, role-based access (admin/analyst/viewer). |
 | **🛡 Hardened Security** | Security headers (CSP, HSTS, X-Frame-Options), per-IP rate limiting, body-size limits, audit logging. |
-| **🎨 Glassmorphism UI** | Translucent panels with `backdrop-filter`, animated gradient background, soft shadows, modern typography. |
+| **🎨 Light/Dark Theme** | Sun/Moon toggle in the top bar, localStorage persistence, CSS custom-property system. Dropdowns, charts, inputs, and tooltips adapt seamlessly to both modes — text always visible. |
+| **📊 Interactive API Docs** | Full Swagger UI (`/docs`) and ReDoc (`/redoc`) with forced-light CSS to ensure text visibility regardless of browser dark-mode settings. |
 
 ---
 
@@ -234,9 +242,8 @@ retail_demand_forecasting/
 │       ├── components/
 │       │   ├── ProtectedRoute.jsx  # Auth guard
 │       │   ├── Sidebar.jsx
-│       │   ├── Topbar.jsx          # User menu + breadcrumb
+│       │   ├── Topbar.jsx          # User menu + breadcrumb + 🌓 Theme Toggle
 │       │   ├── ToastContext.jsx    # Toast notifications
-│       │   ├── ProgressBar.jsx     # Animated progress bar (forecast + compare)
 │       │   └── useApi.js
 │       ├── pages/
 │       │   ├── Login.jsx           # 🔐 Glassmorphism login/register
@@ -360,6 +367,18 @@ Full interactive docs at http://localhost:8000/docs
 
 ---
 
-## 10. License
+## 10. What's New (v1.1.0)
+
+| Change | Details |
+|---|---|
+| **Light / Dark Mode Toggle** | Sun/Moon icon in the top bar. Theme stored in `localStorage`; no flash on reload thanks to an inline `<script>` in `index.html`. Entire CSS uses custom properties for both palettes. |
+| **Authenticated Report Download** | JSON/CSV reports now download via authenticated blob fetch (JWT token attached by axios interceptor) instead of a plain `<a href>` that caused 401 errors. |
+| **Swagger UI Text Fix** | Custom `/docs` route with forced `color-scheme: light` CSS prevents browser dark-mode from making Swagger text invisible. |
+| **Executive BI Dashboard** | Date-range + category filter bar, 4 KPI cards, demand chart, inventory bars, category donut, data grid with risk badges + CSV export. |
+| **Multi-Model Comparison** | Run Prophet → XGBoost → LSTM sequentially with a live progress bar; best model (lowest RMSE) highlighted. |
+
+---
+
+## 11. License
 
 Released under the **MIT License** — see [LICENSE](LICENSE). © 2026 Karan Dhaodiyal, MCA.
