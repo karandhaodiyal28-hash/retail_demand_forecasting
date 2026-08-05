@@ -7,7 +7,7 @@ import { useToast } from './ToastContext'
 function getInitialTheme() {
   const attr = typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme')
   if (attr) return attr
-  try { return localStorage.getItem('theme') || 'dark' } catch { return 'dark' }
+  try { return localStorage.getItem('theme') || 'light' } catch { return 'light' }
 }
 
 const TITLES = {
