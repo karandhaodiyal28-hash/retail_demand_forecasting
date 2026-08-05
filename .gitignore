@@ -44,3 +44,5 @@ Thumbs.db
 *.log
 
 .vercel
+scratch*.md 
+s -ExecutionPolicy* 
