@@ -195,9 +195,12 @@ async def _generic_handler(_: Request, exc: Exception):
     return JSONResponse(status_code=500, content={"detail": "Internal server error", "request_id": rid})
 
 
-# ----- root + health -----
 @app.get("/", tags=["meta"])
 def root():
+    from .config import PROJECT_ROOT
+    index_file = PROJECT_ROOT / "frontend" / "dist" / "index.html"
+    if index_file.exists():
+        return HTMLResponse(content=index_file.read_text(encoding="utf-8"))
     return {"app": settings.APP_NAME, "version": settings.APP_VERSION, "docs": "/docs"}
 
 
