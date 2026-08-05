@@ -90,8 +90,38 @@ def seed(force: bool = False) -> None:
             db.query(models.Product).delete()
             db.commit()
 
+        # Ensure all existing products have an inventory entry
+        products = db.query(models.Product).all()
+        for idx, p in enumerate(products):
+            inv = db.query(models.Inventory).filter(models.Inventory.product_id == p.id).first()
+            
+            # Load average daily sales to compute stock/reorder point
+            sales = db.query(models.Sale).filter(models.Sale.product_id == p.id).all()
+            if sales:
+                avg_q = sum(s.quantity for s in sales) / len(sales)
+            else:
+                avg_q = 15.0  # fallback
+                
+            if not inv:
+                inv = models.Inventory(
+                    product_id=p.id,
+                    current_stock=round(avg_q * random.Random(idx + 500).uniform(5, 12), 2),
+                    reorder_point=round(avg_q * p.lead_time_days * 1.5, 2),
+                    safety_stock=round(avg_q * 3, 2),
+                    recommended_order_qty=0.0,
+                    notes="Initial stock initialized",
+                )
+                db.add(inv)
+            elif inv.current_stock == 0:
+                # If stock is 0, give it a realistic random stock level
+                inv.current_stock = round(avg_q * random.Random(idx + 500).uniform(5, 12), 2)
+                inv.reorder_point = round(avg_q * p.lead_time_days * 1.5, 2)
+                inv.safety_stock = round(avg_q * 3, 2)
+                
+        db.commit()
+
         if db.query(models.Product).count() > 0:
-            print("  sample products already present — skipping")
+            print("  sample products already present — skipping core seed")
             return
 
         products = []
@@ -118,8 +148,17 @@ def seed(force: bool = False) -> None:
                 db.add(models.Sale(
                     product_id=p.id, sale_date=d, quantity=q, revenue=round(q * p.unit_price, 2),
                 ))
+            avg_q = sum(q for _, q in series) / len(series)
+            db.add(models.Inventory(
+                product_id=p.id,
+                current_stock=round(avg_q * random.Random(idx + 500).uniform(5, 12), 2),
+                reorder_point=round(avg_q * p.lead_time_days * 1.5, 2),
+                safety_stock=round(avg_q * 3, 2),
+                recommended_order_qty=0.0,
+                notes="Initial stock initialized",
+            ))
         db.commit()
-        print(f"  inserted {len(products)} products + {len(products) * 400} sales rows")
+        print(f"  inserted {len(products)} products + {len(products) * 400} sales rows + inventory records")
     finally:
         db.close()
 

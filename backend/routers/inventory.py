@@ -55,6 +55,27 @@ def recompute_all(
     _: models.User = Depends(require_role("admin", "analyst")),
 ):
     results = get_all_inventory_status(db)
+    # Persist computed values back to DB
+    for r in results:
+        inv = db.query(models.Inventory).filter(
+            models.Inventory.product_id == r["product_id"]
+        ).first()
+        if inv:
+            inv.reorder_point = r["reorder_point"]
+            inv.safety_stock = r["safety_stock"]
+            inv.recommended_order_qty = r["recommended_order_qty"]
+            inv.notes = r["notes"]
+        else:
+            inv = models.Inventory(
+                product_id=r["product_id"],
+                current_stock=r["current_stock"],
+                reorder_point=r["reorder_point"],
+                safety_stock=r["safety_stock"],
+                recommended_order_qty=r["recommended_order_qty"],
+                notes=r["notes"],
+            )
+            db.add(inv)
+    db.commit()
     return schemas.MessageOut(
         message="Inventory recomputed",
         detail=f"{len(results)} products updated",

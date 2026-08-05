@@ -1,0 +1,15 @@
+# Ignore heavy local virtualenv and node_modules directories from Vercel upload
+.venv
+.venv/
+.venv/**
+frontend/node_modules
+frontend/node_modules/
+frontend/node_modules/**
+node_modules
+node_modules/
+node_modules/**
+__pycache__/
+*.pyc
+.git/
+.env
+data/retail_forecast.db

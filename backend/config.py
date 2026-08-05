@@ -13,6 +13,7 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 REPORTS_DIR = DATA_DIR / "reports"
@@ -27,7 +28,7 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
 
     # ---- Database ----
-    DATABASE_URL: str = f"sqlite:///{DATA_DIR / 'retail_forecast.db'}"
+    DATABASE_URL: str = f"sqlite:///{(DATA_DIR / 'retail_forecast.db').as_posix()}"
     DB_ECHO: bool = False
 
     # ---- Auth / Security ----
@@ -85,6 +86,14 @@ class Settings(BaseSettings):
         """Allow CORS_ORIGINS to be supplied as a JSON array or comma-separated string."""
         if isinstance(v, str) and not v.startswith("["):
             return [item.strip() for item in v.split(",") if item.strip()]
+        return v
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def _normalize_db_url(cls, v: str) -> str:
+        """Ensure SQLite file paths use forward slashes on Windows to avoid escape issues."""
+        if isinstance(v, str) and v.startswith("sqlite"):
+            return v.replace("\\", "/")
         return v
 
 

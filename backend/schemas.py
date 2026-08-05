@@ -5,7 +5,7 @@ All API boundary types live here.
 from __future__ import annotations
 from datetime import date, datetime
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field, EmailStr, field_validator
+from pydantic import BaseModel, Field, EmailStr, field_validator, ConfigDict
 import re
 
 
@@ -55,8 +55,7 @@ class UserOut(BaseModel):
     created_at: datetime
     last_login_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
 
 class TokenOut(BaseModel):
@@ -101,8 +100,7 @@ class ProductOut(ProductBase):
     id: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
 
 class SaleCreate(BaseModel):
@@ -120,8 +118,7 @@ class SaleOut(BaseModel):
     revenue: float
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
 
 class SalesBulkIn(BaseModel):
@@ -133,6 +130,8 @@ class ForecastRequest(BaseModel):
     model_name: str = Field(pattern=r"^(prophet|xgboost|lstm)$")
     horizon_days: int = Field(default=30, ge=1, le=365)
 
+    model_config = ConfigDict(protected_namespaces=())
+
 
 class ForecastOut(BaseModel):
     product_id: int
@@ -140,6 +139,8 @@ class ForecastOut(BaseModel):
     horizon_days: int
     metrics: Dict[str, float]
     forecasts: List[Dict[str, Any]]
+
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class InventoryUpdate(BaseModel):

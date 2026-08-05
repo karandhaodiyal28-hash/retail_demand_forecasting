@@ -52,7 +52,8 @@ def find_python() -> str:
 
 
 def find_npm() -> str:
-    for c in ["npm", "npm.cmd"]:
+    candidates = ["npm.cmd", "npm.bat", "npm"] if os.name == "nt" else ["npm"]
+    for c in candidates:
         path = shutil.which(c)
         if path:
             return path
@@ -81,8 +82,12 @@ def venv_pip() -> str:
 
 
 def install_python_deps(skip_ml: bool = False):
+    py = venv_python()
     step("Upgrading pip...")
-    subprocess.check_call([venv_pip(), "install", "--upgrade", "pip"])
+    try:
+        subprocess.check_call([py, "-m", "pip", "install", "--upgrade", "pip"])
+    except Exception as e:
+        warn(f"Pip upgrade note: {e}")
 
     req_file = PROJECT_ROOT / "requirements.txt"
     if skip_ml:
@@ -97,7 +102,7 @@ def install_python_deps(skip_ml: bool = False):
         req_file = tmp_req
 
     step(f"Installing Python dependencies from {req_file}...")
-    subprocess.check_call([venv_pip(), "install", "-r", str(req_file)])
+    subprocess.check_call([py, "-m", "pip", "install", "-r", str(req_file)])
 
     if skip_ml:
         (PROJECT_ROOT / "requirements_core.txt").unlink(missing_ok=True)
@@ -114,9 +119,13 @@ def install_frontend_deps():
         warn(f"Frontend directory not found at {FRONTEND_DIR}")
         return False
     step("Installing frontend npm dependencies (this may take 1-2 min)...")
-    subprocess.check_call([npm, "install"], cwd=str(FRONTEND_DIR))
-    step("Frontend dependencies installed")
-    return True
+    try:
+        subprocess.check_call([npm, "install"], cwd=str(FRONTEND_DIR), shell=(os.name == "nt"))
+        step("Frontend dependencies installed")
+        return True
+    except Exception as e:
+        warn(f"Npm install warning: {e}")
+        return False
 
 
 def init_database():

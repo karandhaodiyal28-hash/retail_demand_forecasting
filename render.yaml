@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: retail-demand-forecasting
+    env: docker
+    plan: free
+    envVars:
+      - key: APP_NAME
+        value: "Retail Demand Forecasting"
+      - key: DEBUG
+        value: "False"

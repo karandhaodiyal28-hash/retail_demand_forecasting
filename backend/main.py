@@ -124,6 +124,11 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    try:
+        from .seed_data import seed
+        seed()
+    except Exception as e:
+        logger.warning("Startup seed note: %s", e)
     logger.info("Database initialised at %s", settings.DATABASE_URL)
     yield
 
@@ -289,3 +294,20 @@ app.include_router(forecast.router, prefix=settings.API_V1_PREFIX)
 app.include_router(inventory.router, prefix=settings.API_V1_PREFIX)
 app.include_router(reports.router, prefix=settings.API_V1_PREFIX)
 app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)
+
+from fastapi.staticfiles import StaticFiles
+from .config import PROJECT_ROOT
+frontend_dist = PROJECT_ROOT / "frontend" / "dist"
+if frontend_dist.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="static")
+
+    # Catch-all 404 handler to support React client-side routing on page refreshes
+    @app.exception_handler(404)
+    async def spa_fallback(request: Request, exc: Exception):
+        # Exclude API endpoints from fallback
+        if request.url.path.startswith(settings.API_V1_PREFIX) or request.url.path.startswith("/api"):
+            return JSONResponse(status_code=404, content={"detail": "Not Found"})
+        index_file = frontend_dist / "index.html"
+        if index_file.exists():
+            return HTMLResponse(content=index_file.read_text(encoding="utf-8"))
+        return JSONResponse(status_code=404, content={"detail": "Not Found"})

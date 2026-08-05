@@ -22,32 +22,25 @@ def check_venv():
         # Continue anyway or sys.exit(1) based on preference
 
 def run_backend():
-    print("[+] Starting Backend API at http://127.0.0.1:8000...")
+    print("[+] Starting Backend API...")
     try:
+        # Using uvicorn run directly
         uvicorn.run(
             BACKEND_MODULE,
-            host="127.0.0.1",
+            host="0.0.0.0",
             port=8000,
-            reload=False,
+            reload=True,  # Set to False for production
             log_level="info"
         )
     except Exception as e:
         print(f"[X] Backend Error: {e}")
 
-def run_frontend():
-    frontend_dir = PROJECT_ROOT / "frontend"
-    npm = "npm.cmd" if os.name == "nt" else "npm"
-    if (frontend_dir / "package.json").exists():
-        print("[+] Starting Frontend Dashboard UI (Vite) on http://localhost:5173...")
-        try:
-            subprocess.Popen([npm, "run", "dev"], cwd=str(frontend_dir), shell=(os.name == "nt"))
-        except Exception as e:
-            print(f"[!] Frontend UI launcher notice: {e}")
-
 if __name__ == "__main__":
     banner()
     check_venv()
     
+    # Check if database needs seeding or migration (Optional)
+    # subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"])
+    
     print("[+] System initializing...")
-    run_frontend()
     run_backend()

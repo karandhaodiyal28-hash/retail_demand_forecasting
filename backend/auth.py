@@ -18,6 +18,13 @@ from sqlalchemy.orm import Session
 from .config import settings
 from .database import get_db
 from . import models
+import bcrypt
+
+# Workaround for passlib + bcrypt >= 4.0.0 incompatibility (passlib looks for bcrypt.__about__)
+if not hasattr(bcrypt, "__about__"):
+    class __bcrypt_about__:
+        __version__ = getattr(bcrypt, "__version__", "4.0.1")
+    bcrypt.__about__ = __bcrypt_about__
 
 # bcrypt work factor comes from settings (default 12)
 pwd_context = CryptContext(

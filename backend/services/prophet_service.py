@@ -4,6 +4,10 @@ from typing import Tuple, List, Dict
 import numpy as np
 import pandas as pd
 
+import logging
+logging.getLogger("cmdstanpy").setLevel(logging.WARNING)
+logging.getLogger("prophet").setLevel(logging.WARNING)
+
 try:
     from prophet import Prophet
     PROPHET_AVAILABLE = True
